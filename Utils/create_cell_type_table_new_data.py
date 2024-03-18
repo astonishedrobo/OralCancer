@@ -49,7 +49,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     parent_folder = args.parent_folder
 
-    if args.combine == True:
+    if args.combine:
         collated_df = pd.DataFrame()
 
     if parent_folder is not None:

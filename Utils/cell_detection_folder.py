@@ -18,17 +18,18 @@ if __name__ == "__main__":
     error_paths = []
 
     for i, data_path in enumerate(sorted(os.listdir(data_folder))):
-        script_command = f"python3 {script_path} --model ./CellViT-SAM-H-x40.pth --gpu 0 --batch_size {batch_size} process_patches --patch_path {os.path.join(data_folder, data_path)} --save_path {os.path.join(output_folder, data_path)}"
-        
-        # Run the command and capture the result    
-        result = subprocess.run(script_command, shell=True)
-        
+        if os.path.isdir(os.path.join(data_folder, data_path)):
+            script_command = f"python3 {script_path} --model ./CellViT-SAM-H-x40.pth --gpu 0 --batch_size {batch_size} process_patches --patch_path {os.path.join(data_folder, data_path)} --save_path {os.path.join(output_folder, data_path)}"
+            
+            # Run the command and capture the result    
+            result = subprocess.run(script_command, shell=True)
+            
 
-        # Check the exit code
-        if result.returncode != 0:
-            print(f"Error: Command failed with exit code {result.returncode}. Recording path.")
-            error_paths.append(os.path.join(data_folder, data_path))
-            print(error_paths)
+            # Check the exit code
+            if result.returncode != 0:
+                print(f"Error: Command failed with exit code {result.returncode}. Recording path.")
+                error_paths.append(os.path.join(data_folder, data_path))
+                print(error_paths)
 
     # Save the list of error paths to a text file
     with open("error_paths.txt", "w") as file:

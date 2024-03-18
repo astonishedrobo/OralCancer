@@ -12,6 +12,7 @@ from torch.utils.data import Dataset
 from datamodel.wsi_datamodel import WSI
 import os
 from PIL import Image
+import cv2
 
 
 class PatchedWSIInference(Dataset):
@@ -92,12 +93,15 @@ class PatchInference(Dataset):
     def __init__(self, patch_dir, transform: Callable) -> None:
         self.patch_dir = patch_dir
         self.transform = transform
-        self.patch_list = sorted(os.listdir(patch_dir))
+        self.patch_list = sorted([file for file in os.listdir(patch_dir) if file.endswith('.png')])
         self.patch_list.sort()
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, dict]:
         patch_name = self.patch_list[idx]
         patch = Image.open(self.patch_dir / patch_name)
+        # patch = cv2.imread(str(self.patch_dir / patch_name), cv2.IMREAD_UNCHANGED)
+        # patch = cv2.cvtColor(patch, cv2.COLOR_BGRA2RGB)
+        # patch = Image.fromarray(patch)
         if self.transform:
             patch = self.transform(patch)
 

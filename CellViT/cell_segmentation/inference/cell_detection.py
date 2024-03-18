@@ -286,6 +286,9 @@ class CellSegmentationInference:
         tokens_gb = []
         patch_names = dataset.get_patch_names()
 
+        # Compile Model
+        self.model = torch.compile(self.model)
+
         with torch.no_grad():
             for batch in tqdm.tqdm(dataloader):
                 patches = batch.to(self.device)
@@ -363,8 +366,8 @@ class CellSegmentationInference:
         # os.makedirs(os.path.join(save_path, "pred_semantic_masks"), exist_ok=True)
         # os.makedirs(os.path.join(save_path, "mask_barplots"), exist_ok=True)
         # for name, instance_map in zip(patch_names, instance_map_gb):
-        #     cv2.imwrite(os.path.join(save_path, "pred_binary_masks", name), self.get_binary_mask(np.array(instance_map)))
-        #     cv2.imwrite(os.path.join(save_path, "pred_semantic_masks", name), self.semantic_map_rgb(np.array(instance_map), instance_segmentation_geogson[name]))
+            # cv2.imwrite(os.path.join(save_path, "pred_binary_masks", name), self.get_binary_mask(np.array(instance_map)))
+            # cv2.imwrite(os.path.join(save_path, "pred_semantic_masks", name), self.semantic_map_rgb(np.array(instance_map), instance_segmentation_geogson[name]))
         #     self.barplot(instance_segmentation_geogson[name]).savefig(os.path.join(save_path, "mask_barplots", name))
             
 
@@ -701,7 +704,7 @@ class CellSegmentationInference:
         (
             instace_map,
             instance_types,
-        ) = self.model.calculate_instance_map(predictions, magnification=magnification)
+        ) = self.model.calculate_instance_map(predictions, magnification=magnification, nuclei_type_map=TYPE_NUCLEI_DICT)
 
         tokens = predictions["tokens"].to("cpu")
 

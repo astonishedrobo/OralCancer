@@ -67,6 +67,7 @@ class DetectionCellPostProcessor:
     def post_process_cell_segmentation(
         self,
         pred_map: np.ndarray,
+        nuclei_type_map: dict,
     ) -> Tuple[np.ndarray, dict]:
         """Post processing of one image tile
 
@@ -131,24 +132,48 @@ class DetectionCellPostProcessor:
                 "type": None,
             }
 
-        #### * Get class of each instance id, stored at index id-1 (inst_id = number of deteced nucleus)
+        # #### * Get class of each instance id, stored at index id-1 (inst_id = number of deteced nucleus)
+        # for inst_id in list(inst_info_dict.keys()):
+        #     rmin, cmin, rmax, cmax = (inst_info_dict[inst_id]["bbox"]).flatten()
+        #     inst_map_crop = pred_inst[rmin:rmax, cmin:cmax]
+        #     inst_type_crop = pred_type[rmin:rmax, cmin:cmax]
+        #     inst_map_crop = inst_map_crop == inst_id
+        #     inst_type = inst_type_crop[inst_map_crop]
+        #     type_list, type_pixels = np.unique(inst_type, return_counts=True)
+        #     type_list = list(zip(type_list, type_pixels))
+        #     type_list = sorted(type_list, key=lambda x: x[1], reverse=True)
+        #     inst_type = type_list[0][0]
+        #     if inst_type == 0:  # ! pick the 2nd most dominant if exist
+        #         if len(type_list) > 1:
+        #             inst_type = type_list[1][0]
+        #     type_dict = {v[0]: v[1] for v in type_list}
+        #     type_prob = type_dict[inst_type] / (np.sum(inst_map_crop) + 1.0e-6)
+        #     inst_info_dict[inst_id]["type"] = int(inst_type)
+        #     inst_info_dict[inst_id]["type_prob"] = float(type_prob)
+        
         for inst_id in list(inst_info_dict.keys()):
             rmin, cmin, rmax, cmax = (inst_info_dict[inst_id]["bbox"]).flatten()
             inst_map_crop = pred_inst[rmin:rmax, cmin:cmax]
             inst_type_crop = pred_type[rmin:rmax, cmin:cmax]
             inst_map_crop = inst_map_crop == inst_id
+
             inst_type = inst_type_crop[inst_map_crop]
             type_list, type_pixels = np.unique(inst_type, return_counts=True)
-            type_list = list(zip(type_list, type_pixels))
-            type_list = sorted(type_list, key=lambda x: x[1], reverse=True)
-            inst_type = type_list[0][0]
-            if inst_type == 0:  # ! pick the 2nd most dominant if exist
-                if len(type_list) > 1:
-                    inst_type = type_list[1][0]
-            type_dict = {v[0]: v[1] for v in type_list}
-            type_prob = type_dict[inst_type] / (np.sum(inst_map_crop) + 1.0e-6)
-            inst_info_dict[inst_id]["type"] = int(inst_type)
-            inst_info_dict[inst_id]["type_prob"] = float(type_prob)
+            type_dist = {}
+            for i in range(len(type_list)):
+                type_dist[nuclei_type_map[int(type_list[i])]] = type_pixels[i]
+
+            total_pixels = np.sum(inst_map_crop)
+            for t, count in type_dist.items():
+                type_dist[t] = round(count / (total_pixels + 1.0e-6), 2)
+
+            max_type_num = max(type_dist, key=type_dist.get)
+            max_type_str = nuclei_type_map[int(np.argmax(list(type_dist.values())))]
+            max_type_prob = type_dist[max_type_num]
+
+            inst_info_dict[inst_id]["type"] = max_type_str
+            inst_info_dict[inst_id]["type_prob"] = round(float(max_type_prob), 2)
+            inst_info_dict[inst_id]["type_dist"] = type_dist
 
         return pred_inst, inst_info_dict
 
